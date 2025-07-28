@@ -1,0 +1,41 @@
+@startuml "Контейнерная диаграмма - Доступ к ставкам по депозитам для кол-центров"
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title "Контейнерная диаграмма - Доступ к ставкам по депозитам для кол-центров"
+
+Person(bankOperator, "Сотрудник кол-центра банка", "Консультирует клиентов по ставкам")
+Person(partnerOperator, "Сотрудник партнёрского кол-центра", "Консультирует клиентов по ставкам")
+
+System_Boundary(depositRateSystem, "Система управления ставками") {
+    Container(rateService, "Сервис управления ставками", "Java Spring Boot, MS SQL", "Управляет ставками по депозитам")
+    Container(rateAPI, "API для получения ставок", "Java Spring Boot", "Предоставляет API для получения актуальных ставок")
+    Container(fileExportComponent, "Компонент экспорта файлов", "Java", "Формирует файлы со ставками")
+    Container(sftpUploader, "Компонент выгрузки на SFTP", "Java", "Выгружает файлы на SFTP-сервер")
+}
+
+System_Boundary(bankCallCenterSystem, "Система кол-центра банка") {
+    Container(bankCallCenterUI, "Интерфейс кол-центра", "React.js", "Интерфейс для операторов кол-центра")
+    Container(rateIntegration, "Интеграция с API ставок", "Java", "Получает данные о ставках")
+}
+
+System_Boundary(partnerCallCenterSystem, "Система партнёрского кол-центра") {
+    Container(partnerCallCenterUI, "Интерфейс партнёрского кол-центра", "Собственная разработка", "Интерфейс для операторов")
+    Container(fileDownloader, "Компонент загрузки файлов", "Собственная разработка", "Загружает файлы с SFTP")
+    Container(fileProcessor, "Обработчик файлов", "Собственная разработка", "Обрабатывает файлы со ставками")
+}
+
+Container(sftpServer, "SFTP-сервер", "OpenSSH", "Хранит и обеспечивает доступ к файлам")
+
+Rel(bankOperator, bankCallCenterUI, "Использует")
+Rel(partnerOperator, partnerCallCenterUI, "Использует")
+Rel(rateService, rateAPI, "Предоставляет данные для")
+Rel(rateService, fileExportComponent, "Предоставляет данные для")
+Rel(fileExportComponent, sftpUploader, "Передает файлы в")
+Rel(sftpUploader, sftpServer, "Выгружает файлы на", "SFTP")
+Rel(bankCallCenterUI, rateIntegration, "Запрашивает данные через")
+Rel(rateIntegration, rateAPI, "Получает данные от", "REST API")
+Rel(fileDownloader, sftpServer, "Загружает файлы с", "SFTP")
+Rel(fileDownloader, fileProcessor, "Передает файлы в")
+Rel(fileProcessor, partnerCallCenterUI, "Предоставляет данные для")
+
+@enduml
